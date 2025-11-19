@@ -1,28 +1,39 @@
 const express = require('express');
+const cors = require('cors');
 const path = require('path');
-const routes = require('./routes/routes');
-const session = require('express-session');
+const waitPort = require('wait-port');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+require('./database');
 
-app.use(express.json());
+const startServer = async () => {
+  const portOpen = await waitPort({
+    host: process.env.POSTGRES_HOST || 'postgres',
+    port: parseInt(process.env.POSTGRES_PORT) || 5432,
+    timeout: 30000
+  });
 
+  if (!portOpen) {
+    console.error('Postgres não abriu a porta a tempo.');
+    process.exit(1);
+  }
 
-app.use(session({
-    secret: "uma_chave_muito_secreta",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        maxAge: 1000 * 60 * 60 * 24 // 1 dia
-    }
-}));
+  const app = express();
 
-// Servir arquivos estáticos (HTML, CSS, JS)
-app.use('/templates', express.static(path.join(__dirname, '../templates')));
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use(cors());
 
-app.use('/', routes);
+  const baseRoutes = require('./routes/routes');
+  const playerRoutes = require('./players/playerRoutes');
+  // const scoreRoutes = require('./scores/scoreRoutes');
 
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-});
+  app.use('/api', baseRoutes);
+  app.use('/api/players', playerRoutes);
+  // app.use('/api/score', scoreRoutes);
+
+  const PORT = process.env.BACKEND_PORT || 3000;
+  app.listen(PORT, () => console.log(`🚀 Servidor rodando na porta ${PORT}`));
+};
+
+// inicia
+startServer();

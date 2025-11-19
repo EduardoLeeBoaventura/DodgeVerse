@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const Player = require('./playerModel');
+const Player = require('./playerModels');
 
 exports.createPlayer = async (req, res) => {
   try {

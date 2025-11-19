@@ -1,5 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+const GAME_CONFIG = {
+  // Player
+  PLAYER_SPEED: 8,
+  PLAYER_SIZE: 40,
+  
+  // Enemies
+  ENEMY_INITIAL_SPEED: 3,
+  ENEMY_MIN_SIZE: 20,
+  ENEMY_MAX_SIZE: 50,
+  ENEMY_INITIAL_SPAWN_RATE: 1000, // milliseconds
+  ENEMY_MIN_SPAWN_RATE: 200, // fastest spawn rate
+  ENEMY_MAX_SPEED: 10,
+  
+  // Difficulty progression
+  SPAWN_RATE_DECREASE_PER_SPAWN: 20, // ms faster each spawn
+  SPEED_INCREASE_PER_SPAWN: 0.15, // speed increase each spawn
+  
+  // Score
+  POINTS_PER_SECOND: 150,
+  
+  // Idle penalty
+  IDLE_TIME_THRESHOLD: 1, // seconds before penalty
+  IDLE_PENALTY_PER_SECOND: 250, // points lost per second when idle
+  
+  // Canvas
+  CANVAS_WIDTH: 800,
+  CANVAS_HEIGHT: 600
+};
+
 const Game = () => {
   const canvasRef = useRef(null);
   const [gameState, setGameState] = useState('menu'); // menu, playing, gameover
@@ -7,15 +36,25 @@ const Game = () => {
   const [finalScore, setFinalScore] = useState(0);
   
   const gameRef = useRef({
-    player: { x: 375, y: 520, width: 40, height: 40, speed: 8 },
+    player: { 
+      x: GAME_CONFIG.CANVAS_WIDTH / 2 - GAME_CONFIG.PLAYER_SIZE / 2, 
+      y: GAME_CONFIG.CANVAS_HEIGHT - 80, 
+      width: GAME_CONFIG.PLAYER_SIZE, 
+      height: GAME_CONFIG.PLAYER_SIZE, 
+      speed: GAME_CONFIG.PLAYER_SPEED,
+      prevX: GAME_CONFIG.CANVAS_WIDTH / 2 - GAME_CONFIG.PLAYER_SIZE / 2
+    },
     enemies: [],
     score: 0,
     keys: {},
     animationId: null,
-    enemySpawnRate: 1000,
-    enemySpeed: 3,
+    enemySpawnRate: GAME_CONFIG.ENEMY_INITIAL_SPAWN_RATE,
+    enemySpeed: GAME_CONFIG.ENEMY_INITIAL_SPEED,
     lastSpawnTime: 0,
-    lastScoreTime: 0
+    lastScoreTime: 0,
+    lastMoveTime: 0,
+    idleTime: 0,
+    isMoving: false
   });
 
   useEffect(() => {
@@ -47,14 +86,19 @@ const Game = () => {
 
   const startGame = () => {
     const game = gameRef.current;
-    game.player.x = 375;
-    game.player.y = 520;
+    const startX = GAME_CONFIG.CANVAS_WIDTH / 2 - GAME_CONFIG.PLAYER_SIZE / 2;
+    game.player.x = startX;
+    game.player.prevX = startX;
+    game.player.y = GAME_CONFIG.CANVAS_HEIGHT - 80;
     game.enemies = [];
     game.score = 0;
-    game.enemySpawnRate = 1000;
-    game.enemySpeed = 3;
+    game.enemySpawnRate = GAME_CONFIG.ENEMY_INITIAL_SPAWN_RATE;
+    game.enemySpeed = GAME_CONFIG.ENEMY_INITIAL_SPEED;
     game.lastSpawnTime = Date.now();
     game.lastScoreTime = Date.now();
+    game.lastMoveTime = Date.now();
+    game.idleTime = 0;
+    game.isMoving = false;
     
     setScore(0);
     setGameState('playing');
@@ -62,9 +106,9 @@ const Game = () => {
   };
 
   const createEnemy = () => {
-    const size = Math.random() * 30 + 20;
+    const size = Math.random() * (GAME_CONFIG.ENEMY_MAX_SIZE - GAME_CONFIG.ENEMY_MIN_SIZE) + GAME_CONFIG.ENEMY_MIN_SIZE;
     return {
-      x: Math.random() * (750 - size),
+      x: Math.random() * (GAME_CONFIG.CANVAS_WIDTH - size),
       y: -size,
       width: size,
       height: size,
@@ -85,11 +129,11 @@ const Game = () => {
     const game = gameRef.current;
     const now = Date.now();
 
-    // Clear canvas
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Update player position
+    const prevX = game.player.x;
+
     if (game.keys['arrowleft'] || game.keys['a']) {
       game.player.x -= game.player.speed;
     }
@@ -97,33 +141,38 @@ const Game = () => {
       game.player.x += game.player.speed;
     }
 
-    // Keep player in bounds
     game.player.x = Math.max(0, Math.min(canvas.width - game.player.width, game.player.x));
 
-    // Spawn enemies
+    const actuallyMoved = prevX !== game.player.x;
+
+    if (actuallyMoved) {
+      game.lastMoveTime = now;
+      game.idleTime = 0;
+      game.isMoving = true;
+    } else {
+      game.idleTime = (now - game.lastMoveTime) / 1000; // Convert to seconds
+      game.isMoving = false;
+    }
+
     if (now - game.lastSpawnTime > game.enemySpawnRate) {
       game.enemies.push(createEnemy());
       game.lastSpawnTime = now;
       
-      // Increase difficulty over time
-      if (game.enemySpawnRate > 300) {
-        game.enemySpawnRate -= 20;
+      if (game.enemySpawnRate > GAME_CONFIG.ENEMY_MIN_SPAWN_RATE) {
+        game.enemySpawnRate -= GAME_CONFIG.SPAWN_RATE_DECREASE_PER_SPAWN;
       }
-      if (game.enemySpeed < 8) {
-        game.enemySpeed += 0.1;
+      if (game.enemySpeed < GAME_CONFIG.ENEMY_MAX_SPEED) {
+        game.enemySpeed += GAME_CONFIG.SPEED_INCREASE_PER_SPAWN;
       }
     }
 
-    // Update and draw enemies
     ctx.fillStyle = '#FFD700';
     for (let i = game.enemies.length - 1; i >= 0; i--) {
       const enemy = game.enemies[i];
       enemy.y += enemy.speed;
 
-      // Draw enemy
-      ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);a
+      ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
 
-      // Check collision
       if (checkCollision(game.player, enemy)) {
         setFinalScore(game.score);
         setGameState('gameover');
@@ -133,27 +182,42 @@ const Game = () => {
         return;
       }
 
-      // Remove enemies that are off screen
       if (enemy.y > canvas.height) {
         game.enemies.splice(i, 1);
       }
     }
 
-    // Draw player
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(game.player.x, game.player.y, game.player.width, game.player.height);
 
-    // Update score every second
     if (now - game.lastScoreTime > 1000) {
-      game.score += 10;
+      game.score += GAME_CONFIG.POINTS_PER_SECOND;
+
+      if (game.idleTime > GAME_CONFIG.IDLE_TIME_THRESHOLD) {
+        game.score = Math.max(0, game.score - GAME_CONFIG.IDLE_PENALTY_PER_SECOND);
+      }
+      
       setScore(game.score);
       game.lastScoreTime = now;
     }
 
-    // Draw score
     ctx.fillStyle = '#FFFFFF';
     ctx.font = 'bold 24px Arial';
     ctx.fillText(`Score: ${game.score}`, 20, 40);
+
+    if (game.idleTime > 0) {
+      const timeLeft = Math.max(0, GAME_CONFIG.IDLE_TIME_THRESHOLD - game.idleTime);
+      const warningColor = game.idleTime > GAME_CONFIG.IDLE_TIME_THRESHOLD ? '#FF4444' : '#FFD700';
+      
+      ctx.fillStyle = warningColor;
+      ctx.font = 'bold 20px Arial';
+      
+      if (game.idleTime <= GAME_CONFIG.IDLE_TIME_THRESHOLD) {
+        ctx.fillText(`Mova-se! ${timeLeft.toFixed(1)}s`, canvas.width - 180, 40);
+      } else {
+        ctx.fillText(`PENALIDADE! -130pt/s`, canvas.width - 220, 40);
+      }
+    }
 
     game.animationId = requestAnimationFrame(gameLoop);
   };

@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const waitPort = require('wait-port');
+const session = require('express-session');
 
 require('./database');
 
@@ -22,6 +23,18 @@ const startServer = async () => {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(cors());
+
+
+app.use(session({
+  secret: 'uma_chave_secreta_bem_segura',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 2, // 2 horas
+    httpOnly: true,
+  }
+}));
+
 
   const baseRoutes = require('./routes/routes');
   const playerRoutes = require('./players/playerRoutes');

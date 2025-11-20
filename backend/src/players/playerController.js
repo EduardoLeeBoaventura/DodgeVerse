@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const Player = require('./playerModels');
+const Score = require('../scores/scoreController');
 
 exports.createPlayer = async (req, res) => {
   try {
@@ -13,7 +14,13 @@ exports.createPlayer = async (req, res) => {
 
     const newPlayer = await Player.create(name, email, hashedPassword);
 
-    return res.status(201).json({ message: 'Jogador cadastrado com sucesso!', player: newPlayer });
+    try{
+      const newScore = await Score.auxiliaryCreateScore(newPlayer.id, 0);
+    } catch (error) {
+      return res.status(500).json({ message: 'Erro ao criar score inicial para o jogador.' });
+    }
+
+    return res.status(201).json({ message: 'Jogador adastrado com sucesso!', player: newPlayer});
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Erro ao cadastrar jogador.' });

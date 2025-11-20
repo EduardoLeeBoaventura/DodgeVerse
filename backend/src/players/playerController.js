@@ -3,6 +3,7 @@ const Player = require('./playerModels');
 
 exports.createPlayer = async (req, res) => {
   try {
+    console.log('BODY RECEBIDO:', req.body);
     const { name, email, password } = req.body;
 
     const existing = await Player.findByEmail(email);
@@ -10,16 +11,13 @@ exports.createPlayer = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newPlayer = await Player.create({
-        name,
-        password: hashedPassword,
-        email
-    });
+    const newPlayer = await Player.create(name, email, hashedPassword);
 
     return res.status(201).json({ message: 'Jogador cadastrado com sucesso!', player: newPlayer });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Erro ao cadastrar jogador.' });
+    console.error('ERRO DETALHADO:', error);
   }
 };
 

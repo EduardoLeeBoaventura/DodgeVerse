@@ -1,24 +1,18 @@
 const Score = require('./scoreModels');
 
 
-exports.auxiliaryCreateScore = async (playerId, score) => {
-    const newScore = await Score.create(playerId, score);
-    return newScore;
+exports.createScore = async (playerId, score) => {
+    if(typeof score !== 'number') return res.status(400).json({ message: 'Score inválido.' });
+
+    const existingScore = await Score.findByPlayerId(playerId);
+    if (existingScore) return res.status(400).json({ message: 'Score ja cadastrado.' });
+
+    return Score.create(playerId, score);
 }
-exports.createScore = async (req, res) => {
-    try {
-        const { playerId } = req.body;
-        const newScore = await Score.create(playerId, score);
-        return res.status(201).json({ message: 'Score criado com sucesso!', score: newScore });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Erro ao criar score.' });
-    }
-};
 
 exports.verifyScore = async (req, res) => {
     try {
-        const { playerId } = req.body;
+        const { id: playerId } = req.session.user;
         const score = await Score.findByPlayerId(playerId);
         if (!score) return res.status(404).json({ message: 'Score nao encontrado.' });
         return res.status(200).json({ message: 'Score encontrado com sucesso!', score: score });
@@ -30,9 +24,27 @@ exports.verifyScore = async (req, res) => {
 
 exports.updateScore = async (req, res) => {
     try {
-        const { userId, score } = req.body;
+        const { id: userId } = req.session.user;
+        const { score } = req.body;
+
+        if(typeof score !== 'number') return res.status(400).json({ message: 'Score inválido.' });
+
+        const existingScore = await Score.findByPlayerId(userId);
+        if (!existingScore){
+        const newScore = await Score.create(userId, score);
+        return res.status(201).json({ message: 'Score criado com sucesso!', score: newScore });
+        }
+
+        if(existingScore.score >= score) return res.status(200).json({
+                message: 'Recorde não foi atingido.',
+                currentScore: existingScore
+            });
+
         const updatedScore = await Score.update(userId, score);
-        return res.status(200).json({ message: 'Score atualizado com sucesso!', score: updatedScore });
+        return res.status(200).json({
+            message: 'Score atualizado com sucesso!',
+            score: updatedScore
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Erro ao atualizar score.' });

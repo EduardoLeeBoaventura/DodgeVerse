@@ -38,15 +38,14 @@ app.use(session({
 
   const baseRoutes = require('./routes/routes');
   const playerRoutes = require('./players/playerRoutes');
-  // const scoreRoutes = require('./scores/scoreRoutes');
+  const scoreRoutes = require('./scores/scoreRoutes');
 
   app.use('/api', baseRoutes);
-  app.use('/api/players', playerRoutes);
-  // app.use('/api/score', scoreRoutes);
+  app.use('/players', playerRoutes);
+  app.use('/score', scoreRoutes);
 
   const PORT = process.env.BACKEND_PORT || 3000;
   app.listen(PORT, () => console.log(`🚀 Servidor rodando na porta ${PORT}`));
 };
 
-// inicia
 startServer();

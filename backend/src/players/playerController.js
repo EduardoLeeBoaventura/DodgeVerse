@@ -17,7 +17,7 @@ exports.createPlayer = async (req, res) => {
     let newScore;
     
     try{
-      newScore = await Score.auxiliaryCreateScore(newPlayer.id, 0);
+      newScore = await Score.createScore(newPlayer.id, 0);
     } catch (error) {
       return res.status(500).json({ message: 'Erro ao criar score inicial para o jogador.'});
     }
@@ -30,9 +30,15 @@ exports.createPlayer = async (req, res) => {
   }
 };
 
+exports.logoutPlayer = (req, res) => {
+  req.session.destroy();
+  res.status(200).json({ message: 'Logout realizado com sucesso!' });
+}
 
 exports.loginPlayer = async (req, res) => {
   try {
+    if(req.session.playerId) return res.status(400).json({ message: 'Jogador ja logado.' });
+
     const { email, password } = req.body;
 
     const player = await Player.findByEmail(email);

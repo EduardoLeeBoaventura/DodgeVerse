@@ -14,13 +14,15 @@ exports.createPlayer = async (req, res) => {
 
     const newPlayer = await Player.create(name, email, hashedPassword);
 
+    let newScore;
+    
     try{
-      const newScore = await Score.auxiliaryCreateScore(newPlayer.id, 0);
+      newScore = await Score.auxiliaryCreateScore(newPlayer.id, 0);
     } catch (error) {
-      return res.status(500).json({ message: 'Erro ao criar score inicial para o jogador.' });
+      return res.status(500).json({ message: 'Erro ao criar score inicial para o jogador.'});
     }
 
-    return res.status(201).json({ message: 'Jogador adastrado com sucesso!', player: newPlayer});
+    return res.status(201).json({ message: 'Jogador adastrado com sucesso!', player: newPlayer, score: newScore });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Erro ao cadastrar jogador.' });

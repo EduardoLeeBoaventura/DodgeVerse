@@ -28,6 +28,14 @@ const Score = {
         return ScoreResult.rows;
     },
 
+    async findByPlayerId(playerId){
+        const ScoreResult = await pool.query(
+            `SELECT * FROM scores WHERE player_id = $1`,
+            [playerId]
+        );
+        return ScoreResult.rows[0];
+    },
+
     async getTopScores(limit = 15){
         const ScoreResult = await pool.query(
             `SELECT s.*, to_jsonb(u) AS user

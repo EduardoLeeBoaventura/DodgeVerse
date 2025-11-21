@@ -35,7 +35,7 @@ const startServer = async () => {
 
   const routes = require('./routes/routes');
 
-  app.use('/api', routes);
+  app.use('/', routes);
 
   const PORT = process.env.BACKEND_PORT || 3000;
   app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));

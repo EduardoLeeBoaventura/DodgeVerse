@@ -30,14 +30,25 @@ exports.createPlayer = async (req, res) => {
 };
 
 exports.logoutPlayer = (req, res) => {
-  req.session.destroy();
-  res.status(200).json({ message: 'Logout realizado com sucesso!' });
-}
+  req.session.destroy(err => {
+    if (err) return res.status(500).json({ message: 'Erro ao deslogar.' });
+
+    res.clearCookie('connect.sid', {
+      path: '/', 
+      httpOnly: true,
+      sameSite: 'lax',
+    });
+
+    res.status(200).json({ message: 'Logout realizado com sucesso!' });
+  });
+};
+
+
 
 exports.loginPlayer = async (req, res) => {
   try {
     console.log('Login:', req.body)
-    if(req.session.playerId) return res.status(400).json({ message: 'Jogador ja logado.' });
+    if(req.session.user) return res.status(400).json({ message: 'Jogador ja logado.' });
 
     const { email, password } = req.body;
 
@@ -47,8 +58,7 @@ exports.loginPlayer = async (req, res) => {
     const isValid = await bcrypt.compare(password, player.password);
     if (!isValid) return res.status(401).json({ message: 'Senha incorreta.' });
 
-    req.session.playerId = player.id;
-    req.session.email = player.email;
+    req.session.user = { id: player.id, name: player.name };
 
     return res.status(200).json({ message: 'Login realizado com sucesso!' });
   } catch (error) {

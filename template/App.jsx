@@ -298,23 +298,39 @@ const Login = ({ onNavigate }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-const handleSubmit = async (e) => {
+  useEffect(() => {
+    const verifySession = async () => {
+      try {
+        const session = await api.checkSession();
+        if (session.loggedIn) {
+          onNavigate('home');
+        } else {
+          api.logout();
+          onNavigate('login');
+        }
+      } catch (err) {
+        console.error('Erro ao verificar session:', err);
+      }
+    };
+    verifySession();
+  }, [onNavigate]);
 
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-    if(sessionStorage.getItem('token')) {
-      return onNavigate('home');
-    }
+      const response = await api.login(email, password);
 
-    const response = await api.login(email, password);
       if (response.success) {
-        onNavigate('home');
+        onNavigate('home'); // login bem-sucedido
       } else {
-        alert(response.message);
+        if(response.message = 'Jogador ja logado') onNavigate('home');
+        return 1;
+        alert(response.message || 'Email ou senha incorretos!');
       }
     } catch (err) {
       console.error(err);
+      alert('Ocorreu um erro, tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -769,7 +785,18 @@ const Home = ({ onNavigate, onStartGame }) => {
           </ul>
         </div>
 
-        <Button className="logout-button" onClick={() => onNavigate('login')}>
+        <Button
+          className="logout-button"
+          onClick={async () => {
+            try {
+              await api.logout();
+              onNavigate('login'); // vai para a tela de login
+            } catch (err) {
+              console.error('Erro ao deslogar:', err);
+              alert('Não foi possível sair, tente novamente.');
+            }
+          }}
+        >
           Sair
         </Button>
       </div>

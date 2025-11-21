@@ -10,13 +10,16 @@ router.get('/', (req, res) => {
   res.send('API funcionando');
 });
 
-router.get('/session-test', (req, res) => {
-  if (!req.session) {
+router.get('/session', (req, res) => {
+  if (req.session && req.session.user) {
+    console.log('Session encontrada:', req.session);
+    return res.json({ loggedIn: true, user: req.session.user });
+  } else {
     console.log('Session nao encontrada');
+    return res.json({ loggedIn: false });
   }
-  const session = res.json({ session: req.session });
-  console.log(session);
 });
+
 
 // Rotas específicas (todas dentro de /api)
 router.use('/players', playerRoutes);

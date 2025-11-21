@@ -4,5 +4,6 @@ const playerController = require('./playerController');
 
 router.post('/register', playerController.createPlayer);
 router.post('/login', playerController.loginPlayer);
+router.post('/logout', playerController.logoutPlayer);
 
 module.exports = router;

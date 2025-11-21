@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const waitPort = require('wait-port');
 const session = require('express-session');
 
@@ -24,28 +23,22 @@ const startServer = async () => {
   app.use(express.urlencoded({ extended: true }));
   app.use(cors());
 
+  app.use(session({
+    secret: 'game1win2dodger32025',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24,
+      httpOnly: true,
+    }
+  }));
 
-app.use(session({
-  secret: 'uma_chave_secreta_bem_segura',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 2, // 2 horas
-    httpOnly: true,
-  }
-}));
+  const routes = require('./routes/routes');
 
-
-  const baseRoutes = require('./routes/routes');
-  const playerRoutes = require('./players/playerRoutes');
-  const scoreRoutes = require('./scores/scoreRoutes');
-
-  app.use('/api', baseRoutes);
-  app.use('/players', playerRoutes);
-  app.use('/score', scoreRoutes);
+  app.use('/api', routes);
 
   const PORT = process.env.BACKEND_PORT || 3000;
-  app.listen(PORT, () => console.log(`🚀 Servidor rodando na porta ${PORT}`));
+  app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
 };
 
 startServer();

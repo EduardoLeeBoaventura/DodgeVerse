@@ -3,7 +3,7 @@ const router = express.Router();
 const scoreController = require('./scoreController');
 const checkAuth = require('../middleware/checkAuth');
 
-router.use(checkAuth);
+// router.use(checkAuth);
 
 router.post('/', scoreController.createScore);
 router.get('/me', scoreController.verifyScore);

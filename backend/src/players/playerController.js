@@ -4,7 +4,6 @@ const Score = require('../scores/scoreController');
 
 exports.createPlayer = async (req, res) => {
   try {
-    console.log('BODY RECEBIDO:', req.body);
     const { name, email, password } = req.body;
 
     const existing = await Player.findByEmail(email);
@@ -37,6 +36,7 @@ exports.logoutPlayer = (req, res) => {
 
 exports.loginPlayer = async (req, res) => {
   try {
+    console.log('Login:', req.body)
     if(req.session.playerId) return res.status(400).json({ message: 'Jogador ja logado.' });
 
     const { email, password } = req.body;

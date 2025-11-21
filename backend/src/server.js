@@ -18,21 +18,26 @@ const startServer = async () => {
   }
 
   const app = express();
-
+  
+  app.use(cors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+  }));
+  
+ app.use(session({
+  secret: 'game1win2dodger32025',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false,
+    httpOnly: true,
+    sameSite: 'lax',
+  }
+}));
+  
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-  app.use(cors());
-
-  app.use(session({
-    secret: 'game1win2dodger32025',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: 1000 * 60 * 60 * 24,
-      httpOnly: true,
-    }
-  }));
-
+  
   const routes = require('./routes/routes');
 
   app.use('/', routes);

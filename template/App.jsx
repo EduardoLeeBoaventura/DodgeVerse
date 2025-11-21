@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as api from './api';
 
 const styles = `
   :root {
@@ -295,17 +296,35 @@ const Button = ({ children, onClick, className = '' }) => {
 const Login = ({ onNavigate }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
-    console.log('Login:', { email, password });
-    onNavigate('home');
+const handleSubmit = async (e) => {
+
+    e.preventDefault();
+    setLoading(true);
+    try {
+    if(sessionStorage.getItem('token')) {
+      return onNavigate('home');
+    }
+
+    const response = await api.login(email, password);
+      if (response.success) {
+        onNavigate('home');
+      } else {
+        alert(response.message);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="page-container">
       <div className="auth-card">
         <h1>LOGIN</h1>
-        <div>
+        <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
@@ -314,6 +333,7 @@ const Login = ({ onNavigate }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="seu@email.com"
+              required
             />
           </div>
           <div className="form-group">
@@ -324,12 +344,18 @@ const Login = ({ onNavigate }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              required
             />
           </div>
-          <Button onClick={handleSubmit}>Entrar</Button>
-        </div>
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Entrando...' : 'Entrar'}
+          </Button>
+        </form>
         <p className="link-text">
-          Não tem uma conta? <a href="#" onClick={() => onNavigate('register')}>Registre-se</a>
+          Não tem uma conta?{' '}
+          <a href="#" onClick={() => onNavigate('register')}>
+            Registre-se
+          </a>
         </p>
       </div>
     </div>

@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3001/api';
+const API_URL = 'http://localhost:3001';
 
 export const getScores = async () => {
   const res = await fetch(`${API_URL}/scores`);
@@ -15,10 +15,11 @@ export const postScore = async (name, points) => {
 };
 
 export const login = async (email, password) => {
-  const res = await fetch(`${API_URL}/login`, {
+  const res = await fetch('http://localhost:3001/players/login', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ email, password })
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ email, password }),
   });
   return res.json();
 };

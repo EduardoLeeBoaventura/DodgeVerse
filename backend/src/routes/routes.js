@@ -10,6 +10,14 @@ router.get('/', (req, res) => {
   res.send('API funcionando');
 });
 
+router.get('/session-test', (req, res) => {
+  if (!req.session) {
+    console.log('Session nao encontrada');
+  }
+  const session = res.json({ session: req.session });
+  console.log(session);
+});
+
 // Rotas específicas (todas dentro de /api)
 router.use('/players', playerRoutes);
 router.use('/score', scoreRoutes);

@@ -298,15 +298,18 @@ const Login = ({ onNavigate }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Verifica sessão ao montar
   useEffect(() => {
     const verifySession = async () => {
       try {
-        const session = await api.checkSession();
-        if (session.loggedIn) {
+        const res = await api.checkSession();
+        // res: { ok, status, data }
+        if (res.ok && res.data?.loggedIn) {
           onNavigate('home');
         } else {
-          api.logout();
-          onNavigate('login');
+          // não está logado — mantém na página de login
+          // opcional: se quiser garantir logout no backend:
+          // await api.logout();
         }
       } catch (err) {
         console.error('Erro ao verificar session:', err);
@@ -318,16 +321,32 @@ const Login = ({ onNavigate }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      const response = await api.login(email, password);
 
-      if (response.success) {
-        onNavigate('home'); // login bem-sucedido
-      } else {
-        if(response.message = 'Jogador ja logado') onNavigate('home');
-        return 1;
-        alert(response.message || 'Email ou senha incorretos!');
+    try {
+      const res = await api.login(email, password);
+      if (res.ok) {
+        onNavigate('home');
+        return;
       }
+
+      if (res.status === 400) {
+        const msg = res.data?.message || 'Requisição inválida.';
+        alert(msg);
+        return;
+      }
+
+      if (res.status === 401) {
+        alert(res.data?.message || 'Senha incorreta.');
+        return;
+      }
+
+      if (res.status === 404) {
+        alert(res.data?.message || 'Usuário não encontrado.');
+        return;
+      }
+
+      // fallback para outros códigos
+      alert(res.data?.message || `Erro ${res.status}. Tente novamente.`);
     } catch (err) {
       console.error(err);
       alert('Ocorreu um erro, tente novamente.');
@@ -378,26 +397,51 @@ const Login = ({ onNavigate }) => {
   );
 };
 
+
 // Register page
 const Register = ({ onNavigate }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
-    if (password !== confirmPassword) {
-      alert('As senhas não coincidem!');
+  const handleSubmit = async () => {
+  if (!name || !email || !password || !confirmPassword) {
+    alert('Preencha todos os campos.');
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    alert('As senhas não coincidem!');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const res = await api.register(name, email, password);
+
+    if (res.ok) {
+      alert("Conta criada com sucesso!");
+      onNavigate('login');
       return;
     }
-    console.log('Register:', { name, email, password });
-    onNavigate('home');
-  };
+
+    alert(res.message || 'Erro ao registrar.');
+  } catch (err) {
+    console.error(err);
+    alert('Erro inesperado. Tente novamente.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="page-container">
       <div className="auth-card">
         <h1>REGISTRO</h1>
+
         <div>
           <div className="form-group">
             <label htmlFor="name">Nome</label>
@@ -407,8 +451,10 @@ const Register = ({ onNavigate }) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Seu nome"
+              required
             />
           </div>
+
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
@@ -417,8 +463,10 @@ const Register = ({ onNavigate }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="seu@email.com"
+              required
             />
           </div>
+
           <div className="form-group">
             <label htmlFor="password">Senha</label>
             <input
@@ -427,8 +475,10 @@ const Register = ({ onNavigate }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              required
             />
           </div>
+
           <div className="form-group">
             <label htmlFor="confirmPassword">Confirmar Senha</label>
             <input
@@ -437,17 +487,27 @@ const Register = ({ onNavigate }) => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
+              required
             />
           </div>
-          <Button onClick={handleSubmit}>Registrar</Button>
+
+          <Button onClick={handleSubmit} disabled={loading}>
+            {loading ? 'Registrando...' : 'Registrar'}
+          </Button>
         </div>
+
         <p className="link-text">
-          Já tem uma conta? <a href="#" onClick={() => onNavigate('login')}>Faça login</a>
+          Já tem uma conta?{' '}
+          <a href="#" onClick={() => onNavigate('login')}>
+            Faça login
+          </a>
         </p>
       </div>
     </div>
   );
 };
+
+
 
 // ========== GAME PAGE WITH EMBEDDED GAME ==========
 const GAME_CONFIG = {

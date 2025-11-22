@@ -9,13 +9,14 @@ const Score = {
         return ScoreResult.rows[0];
     },
 
-    async update(userId, score){
+    async update(userId, score) {
         const ScoreResult = await pool.query(
-            'UPDATE scores SET scores = $1 WHERE player_id = $2 RETURNING *',
+            'UPDATE scores SET score = $1 WHERE player_id = $2 RETURNING *',
             [score, userId]
         );
         return ScoreResult.rows[0];
     },
+
 
     async getScorePlayer(playerId){
         const ScoreResult = await pool.query(
